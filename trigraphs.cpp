@@ -12,6 +12,8 @@ class Parser {
 
     void parse() noexcept;
 
+    void toggle(const STATE state) noexcept;
+
    private:
     /// Buffer
     std::stringstream buffer_;
@@ -37,9 +39,27 @@ Parser::~Parser() {
 
 void Parser::parse() noexcept {
     // Do the parsing
+    char currentChar;
 
-    // Outputing
-    outputFile_ << buffer_.str();
+    while (buffer_ >> currentChar) {
+        if (currentChar == '\"') {
+            toggle(STATE::COMMENT);
+            continue;
+        }
+
+        // If we are in a `NORMAL` state, we output the character
+        if (currentState_ == STATE::NORMAL) {
+            outputFile_ << currentChar;
+        }
+    }
+}
+
+void Parser::toggle(STATE state) noexcept {
+    if (currentState_ == STATE::NORMAL) {
+        currentState_ = state;
+    } else if (currentState_ == state) {
+        currentState_ = STATE::NORMAL;
+    }
 }
 
 /// Show the correct usage
