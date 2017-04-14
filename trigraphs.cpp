@@ -33,12 +33,16 @@ class Parser {
 Parser::Parser(const std::string& inputFileName,
                const std::string& outputFileName)
     : inputFile_(inputFileName), outputFile_(outputFileName) {
-    // TODO: Improve the reading speed
-    // buffer_ << inputFile_.rdbuf();
-    // Use hex representation
-    std::string trigraph = "?";
-    trigraph.append("?!");
-    trigraphEquivalent_.emplace('|', trigraph);
+    // Fill the equivalent map
+    trigraphEquivalent_.emplace('#', "\x3f\x3f\x3d");   // ??=
+    trigraphEquivalent_.emplace('\\', "\x3f\x3f\x2f");  // ??/
+    trigraphEquivalent_.emplace('^', "\x3f\x3f\x27");   // ??'
+    trigraphEquivalent_.emplace('[', "\x3f\x3f\x28");   // ??(
+    trigraphEquivalent_.emplace(']', "\x3f\x3f\x29");   // ??)
+    trigraphEquivalent_.emplace('|', "\x3f\x3f\x21");   // ??!
+    trigraphEquivalent_.emplace('{', "\x3f\x3f\x3c");   // ??<
+    trigraphEquivalent_.emplace('}', "\x3f\x3f\x3e");   // ??>
+    trigraphEquivalent_.emplace('~', "\x3f\x3f\x2d");   // ??-
 }
 
 Parser::~Parser() {
@@ -51,6 +55,8 @@ void Parser::parse() noexcept {
     while (getline(inputFile_, line)) {
         char previousChar = 0;
 
+        // TODO: This works because only have single line comment
+        currentState_ = State::NORMAL;
         for (size_t i = 0; i < line.size(); ++i) {
             // Single line comment
             if (line[i] == '/' && line[i] == previousChar) {
