@@ -2,8 +2,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
-enum class STATE { NORMAL, COMMENT, LITERAL };
+enum class State { NORMAL, COMMENT, LITERAL };
 
 class Parser {
    public:
@@ -12,24 +13,32 @@ class Parser {
 
     void parse() noexcept;
 
-    void toggle(const STATE state) noexcept;
-
    private:
+    void insert(char character) noexcept;
+    void insertRestOfLine(const std::string& line, size_t startIndex) noexcept;
+    void toggle(const State state) noexcept;
+
     /// Buffer
     std::stringstream buffer_;
     /// Current state
-    STATE currentState_ = STATE::NORMAL;
+    State currentState_ = State::NORMAL;
     /// Input file
     std::ifstream inputFile_;
     /// Ouput file
     std::ofstream outputFile_;
+    /// Trigraphs equivalents
+    std::unordered_map<char, std::string> trigraphEquivalent_;
 };
 
 Parser::Parser(const std::string& inputFileName,
                const std::string& outputFileName)
     : inputFile_(inputFileName), outputFile_(outputFileName) {
     // TODO: Improve the reading speed
-    buffer_ << inputFile_.rdbuf();
+    // buffer_ << inputFile_.rdbuf();
+    // Use hex representation
+    std::string trigraph = "?";
+    trigraph.append("?!");
+    trigraphEquivalent_.emplace('|', trigraph);
 }
 
 Parser::~Parser() {
@@ -38,27 +47,53 @@ Parser::~Parser() {
 }
 
 void Parser::parse() noexcept {
-    // Do the parsing
-    char currentChar;
+    std::string line;
+    while (getline(inputFile_, line)) {
+        char previousChar = 0;
 
-    while (buffer_ >> currentChar) {
-        if (currentChar == '\"') {
-            toggle(STATE::COMMENT);
-            continue;
+        for (size_t i = 0; i < line.size(); ++i) {
+            // Single line comment
+            if (line[i] == '/' && line[i] == previousChar) {
+                currentState_ = State::COMMENT;
+                insertRestOfLine(line, i);
+                break;  // We are in a single line comment
+            } else if (line[i] == '\"' && previousChar != '\\') {
+                toggle(State::LITERAL);
+            }
+            insert(line[i]);
+            previousChar = line[i];
         }
+        insert('\n');
+    }
+}
 
-        // If we are in a `NORMAL` state, we output the character
-        if (currentState_ == STATE::NORMAL) {
-            outputFile_ << currentChar;
+void Parser::insert(char character) noexcept {
+    // If in a comment or a string literal, don't change symbols
+    if (currentState_ == State::COMMENT || currentState_ == State::LITERAL ||
+        character == '\n') {
+        outputFile_ << character;
+    } else {
+        const auto it = trigraphEquivalent_.find(character);
+        if (it != trigraphEquivalent_.end()) {
+            outputFile_ << it->second;
+        } else {
+            outputFile_ << character;
         }
     }
 }
 
-void Parser::toggle(STATE state) noexcept {
-    if (currentState_ == STATE::NORMAL) {
+void Parser::insertRestOfLine(const std::string& line,
+                              size_t startIndex) noexcept {
+    for (; startIndex < line.size(); ++startIndex) {
+        insert(line[startIndex]);
+    }
+}
+
+void Parser::toggle(State state) noexcept {
+    if (currentState_ == State::NORMAL) {
         currentState_ = state;
     } else if (currentState_ == state) {
-        currentState_ = STATE::NORMAL;
+        currentState_ = State::NORMAL;
     }
 }
 
