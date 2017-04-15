@@ -43,6 +43,8 @@ Parser::Parser(const std::string& inputFileName,
     trigraphEquivalent_.emplace('{', "\x3f\x3f\x3c");   // ??<
     trigraphEquivalent_.emplace('}', "\x3f\x3f\x3e");   // ??>
     trigraphEquivalent_.emplace('~', "\x3f\x3f\x2d");   // ??-
+
+    outputFile_ << "#pragma clang diagnostic ignored \"-Wtrigraphs\"\n";
 }
 
 Parser::~Parser() {
