@@ -6,7 +6,7 @@ int main() {
         std::cout << "|Hello, World!|" << std::endl;
     }
 
-    if (true && false) {
+    if (true || false) {
         /* This is a multi
          * line comment |o|
          * "|o|"

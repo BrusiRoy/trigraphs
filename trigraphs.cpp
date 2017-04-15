@@ -44,7 +44,8 @@ Parser::Parser(const std::string& inputFileName,
     trigraphEquivalent_.emplace('}', "\x3f\x3f\x3e");   // ??>
     trigraphEquivalent_.emplace('~', "\x3f\x3f\x2d");   // ??-
 
-    outputFile_ << "#pragma clang diagnostic ignored \"-Wtrigraphs\"\n";
+    outputFile_
+        << "\x3f\x3f\x3dpragma clang diagnostic ignored \"-Wtrigraphs\"\n";
 }
 
 Parser::~Parser() {
@@ -52,28 +53,31 @@ Parser::~Parser() {
     outputFile_.close();
 }
 
+/// Parse `inputFile_`
 void Parser::parse() noexcept {
     std::string line;
     // Parse one line at a time
     while (getline(inputFile_, line)) {
         char previousChar = 0;
 
-        // TODO: Fix comments inside a literal or literal inside comments
         for (size_t i = 0; i < line.size(); ++i) {
             // Single line comment
-            if (line[i] == '/' && line[i] == previousChar) {
-                // currentState_ = State::COMMENT;
+            if (line[i] == '/' && line[i] == previousChar &&
+                currentState_ == State::NORMAL) {
                 insertRestOfLine(line, i);
-                break;  // We are in a single line comment
+                break;
             }
             // Multi-line comment
-            else if (previousChar == '/' && line[i] == '*') {
+            else if (previousChar == '/' && line[i] == '*' &&
+                     currentState_ == State::NORMAL) {
                 toggle(State::COMMENT);
-            } else if (previousChar == '*' && line[i] == '/') {
+            } else if (previousChar == '*' && line[i] == '/' &&
+                       currentState_ == State::COMMENT) {
                 toggle(State::COMMENT);
             }
             // String literal
-            else if (line[i] == '\"' && previousChar != '\\') {
+            else if (line[i] == '\"' && previousChar != '\\' &&
+                     currentState_ != State::COMMENT) {
                 toggle(State::LITERAL);
             }
             insert(line[i]);
@@ -83,8 +87,9 @@ void Parser::parse() noexcept {
     }
 }
 
+/// Insert a character in the `outputFile_`
 void Parser::insert(char character) noexcept {
-    // If in a comment or a string literal, don't change symbols
+    // If in a comment or a string literal, don't format
     if (currentState_ == State::COMMENT || currentState_ == State::LITERAL ||
         character == '\n') {
         outputFile_ << character;
@@ -98,11 +103,13 @@ void Parser::insert(char character) noexcept {
     }
 }
 
+/// Insert the rest of a line without formatting
 void Parser::insertRestOfLine(const std::string& line,
                               size_t startIndex) noexcept {
     outputFile_ << line.substr(startIndex, line.size());
 }
 
+/// Toggle between `currentState_` and `state`
 void Parser::toggle(State state) noexcept {
     if (currentState_ == State::NORMAL) {
         currentState_ = state;
