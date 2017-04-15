@@ -54,18 +54,26 @@ Parser::~Parser() {
 
 void Parser::parse() noexcept {
     std::string line;
+    // Parse one line at a time
     while (getline(inputFile_, line)) {
         char previousChar = 0;
 
-        // TODO: This works because only have single line comment
-        currentState_ = State::NORMAL;
+        // TODO: Fix comments inside a literal or literal inside comments
         for (size_t i = 0; i < line.size(); ++i) {
             // Single line comment
             if (line[i] == '/' && line[i] == previousChar) {
-                currentState_ = State::COMMENT;
+                // currentState_ = State::COMMENT;
                 insertRestOfLine(line, i);
                 break;  // We are in a single line comment
-            } else if (line[i] == '\"' && previousChar != '\\') {
+            }
+            // Multi-line comment
+            else if (previousChar == '/' && line[i] == '*') {
+                toggle(State::COMMENT);
+            } else if (previousChar == '*' && line[i] == '/') {
+                toggle(State::COMMENT);
+            }
+            // String literal
+            else if (line[i] == '\"' && previousChar != '\\') {
                 toggle(State::LITERAL);
             }
             insert(line[i]);
