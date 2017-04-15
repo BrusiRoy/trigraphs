@@ -9,7 +9,8 @@ int main() {
     if (true && false) {
         /* This is a multi
          * line comment |o|
+         * "|o|"
          */
-        std::cout << "The computer said \"|Hi!|\"" << std::endl;
+        std::cout << "The //computer said \"|Hi!|\"" << std::endl;
     }
 }
