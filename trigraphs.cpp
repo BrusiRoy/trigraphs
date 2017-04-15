@@ -33,7 +33,7 @@ class Parser {
 Parser::Parser(const std::string& inputFileName,
                const std::string& outputFileName)
     : inputFile_(inputFileName), outputFile_(outputFileName) {
-    // Fill the equivalent map
+    // Fill the trigraphs equivalent map
     trigraphEquivalent_.emplace('#', "\x3f\x3f\x3d");   // ??=
     trigraphEquivalent_.emplace('\\', "\x3f\x3f\x2f");  // ??/
     trigraphEquivalent_.emplace('^', "\x3f\x3f\x27");   // ??'
@@ -90,9 +90,7 @@ void Parser::insert(char character) noexcept {
 
 void Parser::insertRestOfLine(const std::string& line,
                               size_t startIndex) noexcept {
-    for (; startIndex < line.size(); ++startIndex) {
-        insert(line[startIndex]);
-    }
+    outputFile_ << line.substr(startIndex, line.size());
 }
 
 void Parser::toggle(State state) noexcept {
